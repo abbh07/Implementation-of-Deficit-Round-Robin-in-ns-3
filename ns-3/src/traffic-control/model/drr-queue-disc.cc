@@ -102,7 +102,7 @@ TypeId DRRQueueDisc::GetTypeId (void)
     .AddConstructor<DRRQueueDisc> ()
     .AddAttribute ("ByteLimit",
                    "The hard limit on the real queue size, measured in bytes",
-                   UintegerValue (1000 * 1024),
+                   UintegerValue (100 * 1024),
                    MakeUintegerAccessor (&DRRQueueDisc::m_limit),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("Flows",
@@ -288,10 +288,10 @@ DRRQueueDisc::CheckConfig (void)
 
   if (GetNPacketFilters () == 0)
     {
-      // Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
-      //AddPacketFilter (ipv4Filter);
-      NS_LOG_ERROR ("DRRQueueDisc needs at least a packet filter");
-      return false;
+       Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
+      AddPacketFilter (ipv4Filter);
+//      NS_LOG_ERROR ("DRRQueueDisc needs at least a packet filter");
+//      return false;
     }
 
   if (GetNInternalQueues () > 0)
@@ -354,7 +354,7 @@ DRRQueueDisc::DRRDrop (void)
   Ptr<QueueDiscItem> item;
   item = qd->GetInternalQueue (0)->Dequeue ();
   DropAfterDequeue (item, OVERLIMIT_DROP);
-
+  NS_LOG_DEBUG("Dropped item from queue " << index );
   return index;
 }
 

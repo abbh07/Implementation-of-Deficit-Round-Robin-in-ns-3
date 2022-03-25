@@ -37,7 +37,7 @@ def build(bld):
       'test/queue-disc-traces-test-suite.cc',
       'test/tbf-queue-disc-test-suite.cc',
       'test/tc-flow-control-test-suite.cc',
-      'test/drr-queue-disc-test-suite.cc'
+      'test/drr-test-suite.cc'
         ]
 
     headers = bld(features='ns3header')

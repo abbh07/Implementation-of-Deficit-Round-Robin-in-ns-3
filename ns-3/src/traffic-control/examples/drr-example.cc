@@ -60,9 +60,11 @@ NodeContainer n1n2;
 NodeContainer n2n3;
 NodeContainer n3n4;
 NodeContainer n3n5;
+NodeContainer n6n2;
 
 Ipv4InterfaceContainer i0i2;
 Ipv4InterfaceContainer i1i2;
+Ipv4InterfaceContainer i6i2;
 Ipv4InterfaceContainer i2i3;
 Ipv4InterfaceContainer i3i4;
 Ipv4InterfaceContainer i3i5;
@@ -93,6 +95,8 @@ CheckQueueDiscSize (Ptr<QueueDisc> queue)
 void
 BuildAppsTest ()
 {
+  LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
+
   // SINK is in the right side
   uint16_t port = 50000;
   Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
@@ -117,8 +121,14 @@ BuildAppsTest ()
   OnOffHelper clientHelper2 ("ns3::TcpSocketFactory", Address ());
   clientHelper2.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
   clientHelper2.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  clientHelper2.SetAttribute ("PacketSize", UintegerValue (1000));
+  clientHelper2.SetAttribute ("PacketSize", UintegerValue (900));
   clientHelper2.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
+//
+  OnOffHelper clientHelper3 ("ns3::TcpSocketFactory", Address ());
+  clientHelper3.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  clientHelper3.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  clientHelper3.SetAttribute ("PacketSize", UintegerValue (800));
+  clientHelper3.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
 
   ApplicationContainer clientApps1;
   AddressValue remoteAddress (InetSocketAddress (i3i4.GetAddress (1), port));
@@ -132,6 +142,12 @@ BuildAppsTest ()
   clientApps2.Add (clientHelper2.Install (n1n2.Get (0)));
   clientApps2.Start (Seconds (client_start_time));
   clientApps2.Stop (Seconds (client_stop_time));
+
+  ApplicationContainer clientApps3;
+  clientHelper3.SetAttribute ("Remote", remoteAddress);
+  clientApps3.Add (clientHelper3.Install (n6n2.Get (0)));
+  clientApps3.Start (Seconds (client_start_time));
+  clientApps3.Stop (Seconds (client_stop_time));
 }
 
 int
@@ -169,15 +185,17 @@ main (int argc, char *argv[])
 
   NS_LOG_INFO ("Create nodes");
   NodeContainer c;
-  c.Create (6);
+  c.Create (7);
   Names::Add ( "N0", c.Get (0));
   Names::Add ( "N1", c.Get (1));
   Names::Add ( "N2", c.Get (2));
   Names::Add ( "N3", c.Get (3));
   Names::Add ( "N4", c.Get (4));
   Names::Add ( "N5", c.Get (5));
+  Names::Add ( "N6", c.Get (6));
   n0n2 = NodeContainer (c.Get (0), c.Get (2));
   n1n2 = NodeContainer (c.Get (1), c.Get (2));
+  n6n2 = NodeContainer (c.Get (6), c.Get (2));
   n2n3 = NodeContainer (c.Get (2), c.Get (3));
   n3n4 = NodeContainer (c.Get (3), c.Get (4));
   n3n5 = NodeContainer (c.Get (3), c.Get (5));
@@ -192,7 +210,7 @@ main (int argc, char *argv[])
 
   // DRR params
   NS_LOG_INFO ("Set DRR params");
-  Config::SetDefault ("ns3::DRRQueueDisc::ByteLimit", UintegerValue (100 * 1024));
+  Config::SetDefault ("ns3::DRRQueueDisc::ByteLimit", UintegerValue (500 * 1024));
   Config::SetDefault ("ns3::DRRQueueDisc::Flows", UintegerValue (1024));
 
   NS_LOG_INFO ("Install internet stack on all nodes.");
@@ -201,7 +219,7 @@ main (int argc, char *argv[])
 
   TrafficControlHelper tchPfifo;
   uint16_t handle = tchPfifo.SetRootQueueDisc ("ns3::PfifoFastQueueDisc");
-  tchPfifo.AddInternalQueues (handle, 3, "ns3::DropTailQueue", "MaxPackets", UintegerValue (1000));
+  tchPfifo.AddInternalQueues (handle, 3, "ns3::DropTailQueue", "MaxSize", StringValue ("10000p"));
 
   TrafficControlHelper tchDRR;
   tchDRR.SetRootQueueDisc ("ns3::DRRQueueDisc");
@@ -212,6 +230,7 @@ main (int argc, char *argv[])
 
   NetDeviceContainer devn0n2;
   NetDeviceContainer devn1n2;
+  NetDeviceContainer devn6n2;
   NetDeviceContainer devn2n3;
   NetDeviceContainer devn3n4;
   NetDeviceContainer devn3n5;
@@ -229,6 +248,12 @@ main (int argc, char *argv[])
   p2p.SetChannelAttribute ("Delay", StringValue ("3ms"));
   devn1n2 = p2p.Install (n1n2);
   tchPfifo.Install (devn1n2);
+
+  p2p.SetQueue ("ns3::DropTailQueue");
+  p2p.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
+  p2p.SetChannelAttribute ("Delay", StringValue ("3ms"));
+  devn6n2 = p2p.Install (n6n2);
+  tchPfifo.Install (devn6n2);
 
   p2p.SetQueue ("ns3::DropTailQueue");
   p2p.SetDeviceAttribute ("DataRate", StringValue (DRRLinkDataRate));
@@ -257,6 +282,9 @@ main (int argc, char *argv[])
 
   ipv4.SetBase ("10.1.2.0", "255.255.255.0");
   i1i2 = ipv4.Assign (devn1n2);
+
+  ipv4.SetBase ("10.1.6.0", "255.255.255.0");
+  i6i2 = ipv4.Assign (devn6n2);
 
   ipv4.SetBase ("10.1.3.0", "255.255.255.0");
   i2i3 = ipv4.Assign (devn2n3);
