@@ -50,28 +50,33 @@ main (int argc, char *argv[])
   NodeContainer n0n1 = NodeContainer (nodes.Get (0), nodes.Get (1));
   NodeContainer n1n2 = NodeContainer (nodes.Get (1), nodes.Get (2));
 
-//  TrafficControlHelper tch;
-//  uint16_t handle = tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc");
-//  tch.AddInternalQueues (handle, 3, "ns3::DropTailQueue", "MaxSize", StringValue ("10000p"));
+  TrafficControlHelper tch;
+  uint16_t handle = tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc");
+  // Pfifo q have min size 1000 with min 3 internal q
+  tch.AddInternalQueues (handle, 3, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 
-//  QueueDiscContainer queueDiscs;
 
   // Setup channel
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("10Kbps"));
   pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer devn0n1 = pointToPoint.Install (n0n1);
 //  pointToPoint.SetQueue ("ns3::DropTailQueue");
 
   // Setup NIC
-  NetDeviceContainer devn0n1 = pointToPoint.Install (n0n1);
 //  pointToPoint.SetQueue ("ns3::DropTailQueue");
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Kbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("10ms"));
   NetDeviceContainer devn1n2 = pointToPoint.Install (n1n2);
-//  tch.Install (devn1n2);
 //  queueDiscs = tch.Install (devn1n2);
 
   // Setup IP
   InternetStackHelper stack;
   stack.Install (nodes);
+
+  // Should be placed after internet is installed on the nodes
+  QueueDiscContainer queueDiscs;
+  queueDiscs = tch.Install(devn1n2);
 
   Ipv4AddressHelper ipv4;
 
@@ -89,7 +94,7 @@ main (int argc, char *argv[])
   uint16_t port = 50000;
   Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
   PacketSinkHelper sinkHelper ("ns3::UdpSocketFactory", sinkLocalAddress);
-  ApplicationContainer sinkApp = sinkHelper.Install (n1n2.Get (1));
+  ApplicationContainer sinkApp = sinkHelper.Install (n0n1.Get (1));
   sinkApp.Start (Seconds (0.0));
   sinkApp.Stop (Seconds (10.0));
 
@@ -109,13 +114,13 @@ main (int argc, char *argv[])
 //  clientApps.Stop (Seconds (10.0));
 
   // Setup source application
-  UdpClientHelper echoClient (i1i2.GetAddress (1), port);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (100));
-  echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.2)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+  UdpClientHelper echoClient (i0i1.GetAddress (1), port);
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (10000));
+  echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.1)));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (10240));
 
-  ApplicationContainer clientApp = echoClient.Install (n1n2.Get (1));
-  AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
+  ApplicationContainer clientApp = echoClient.Install (n0n1.Get (0));
+//  AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
 //  echoClient.SetAttribute ("Remote", remoteAddress);
   clientApp.Start (Seconds (2.0));
   clientApp.Stop (Seconds (10.0));
@@ -132,6 +137,8 @@ main (int argc, char *argv[])
 //  clientApp.Add (clientHelper.Install (n0n1.Get (0)));
 //  clientApp.Start (Seconds (1.0));
 //  clientApp.Stop (Seconds (10.0));
+
+  Ptr<QueueDisc> q = queueDiscs.Get (0);
 
   // Setup monitors
   FlowMonitorHelper flowmon;
@@ -162,15 +169,16 @@ main (int argc, char *argv[])
   std::cout << "  Rx Packets/Bytes:   " << stats[1].rxPackets
             << " / " << stats[1].rxBytes << std::endl;
 
-//  uint32_t packetsDroppedByQueueDisc = 0;
-//  uint64_t bytesDroppedByQueueDisc = 0;
-//  if (stats[1].packetsDropped.size () > Ipv4FlowProbe::DROP_QUEUE_DISC)
-//    {
-//      packetsDroppedByQueueDisc = stats[1].packetsDropped[Ipv4FlowProbe::DROP_QUEUE_DISC];
-//      bytesDroppedByQueueDisc = stats[1].bytesDropped[Ipv4FlowProbe::DROP_QUEUE_DISC];
-//    }
-//  std::cout << "  Packets/Bytes Dropped by Queue Disc:   " << packetsDroppedByQueueDisc
-//            << " / " << bytesDroppedByQueueDisc << std::endl;
+
+  uint32_t packetsDroppedByQueueDisc = 0;
+  uint64_t bytesDroppedByQueueDisc = 0;
+  if (stats[1].packetsDropped.size () > Ipv4FlowProbe::DROP_QUEUE_DISC)
+    {
+      packetsDroppedByQueueDisc = stats[1].packetsDropped[Ipv4FlowProbe::DROP_QUEUE_DISC];
+      bytesDroppedByQueueDisc = stats[1].bytesDropped[Ipv4FlowProbe::DROP_QUEUE_DISC];
+    }
+  std::cout << "  Packets/Bytes Dropped by Queue Disc:   " << packetsDroppedByQueueDisc
+            << " / " << bytesDroppedByQueueDisc << std::endl;
 
 
   uint32_t packetsDroppedByNetDevice = 0;
@@ -210,8 +218,8 @@ main (int argc, char *argv[])
   std::cout << "  Tx Bytes: " << totalPacketsThr1 << std::endl;
   std::cout << "  Average Goodput: " << thr1 << " Mbit/s" << std::endl;
 
-//  std::cout << std::endl << "*** TC Layer statistics ***" << std::endl;
-//  std::cout << q->GetStats () << std::endl;
+  std::cout << std::endl << "*** TC Layer statistics ***" << std::endl;
+  std::cout << q->GetStats () << std::endl;
 
 //  Simulator::Destroy ();
   return 0;
