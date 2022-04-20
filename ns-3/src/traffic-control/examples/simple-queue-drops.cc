@@ -109,12 +109,12 @@ main (int argc, char *argv[])
 //  clientApps.Stop (Seconds (10.0));
 
   // Setup source application
-  UdpClientHelper echoClient (i0i1.GetAddress (1), port);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
+  UdpClientHelper echoClient (i1i2.GetAddress (1), port);
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (100));
   echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.2)));
   echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
 
-  ApplicationContainer clientApp = echoClient.Install (n0n1.Get (0));
+  ApplicationContainer clientApp = echoClient.Install (n1n2.Get (1));
   AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
 //  echoClient.SetAttribute ("Remote", remoteAddress);
   clientApp.Start (Seconds (2.0));
