@@ -354,7 +354,7 @@ DRRQueueDisc::DRRDrop (void)
   Ptr<QueueDiscItem> item;
   item = qd->GetInternalQueue (0)->Dequeue ();
   DropAfterDequeue (item, OVERLIMIT_DROP);
-  NS_LOG_DEBUG("Dropped item from queue " << index );
+  NS_LOG_INFO("Dropped item from queue " << index );
   return index;
 }
 

@@ -237,32 +237,32 @@ main (int argc, char *argv[])
 
   QueueDiscContainer queueDiscs;
 
-  p2p.SetQueue ("ns3::DropTailQueue");
+//  p2p.SetQueue ("ns3::DropTailQueue");
   p2p.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
   devn0n2 = p2p.Install (n0n2);
   tchPfifo.Install (devn0n2);
 
-  p2p.SetQueue ("ns3::DropTailQueue");
+//  p2p.SetQueue ("ns3::DropTailQueue");
   p2p.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   p2p.SetChannelAttribute ("Delay", StringValue ("3ms"));
   devn1n2 = p2p.Install (n1n2);
   tchPfifo.Install (devn1n2);
 
-  p2p.SetQueue ("ns3::DropTailQueue");
+//  p2p.SetQueue ("ns3::DropTailQueue");
   p2p.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   p2p.SetChannelAttribute ("Delay", StringValue ("3ms"));
   devn6n2 = p2p.Install (n6n2);
   tchPfifo.Install (devn6n2);
 
-  p2p.SetQueue ("ns3::DropTailQueue");
+//  p2p.SetQueue ("ns3::DropTailQueue");
   p2p.SetDeviceAttribute ("DataRate", StringValue (DRRLinkDataRate));
   p2p.SetChannelAttribute ("Delay", StringValue (DRRLinkDelay));
   devn2n3 = p2p.Install (n2n3);
   // only backbone link has DRR queue disc
   queueDiscs = tchDRR.Install (devn2n3);
 
-  p2p.SetQueue ("ns3::DropTailQueue");
+//  p2p.SetQueue ("ns3::DropTailQueue");
   p2p.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   p2p.SetChannelAttribute ("Delay", StringValue ("4ms"));
   devn3n4 = p2p.Install (n3n4);
@@ -325,6 +325,8 @@ main (int argc, char *argv[])
       Ptr<QueueDisc> queue = queueDiscs.Get (0);
       Simulator::ScheduleNow (&CheckQueueDiscSize, queue);
     }
+
+
 
   Simulator::Stop (Seconds (sink_stop_time));
   Simulator::Run ();
