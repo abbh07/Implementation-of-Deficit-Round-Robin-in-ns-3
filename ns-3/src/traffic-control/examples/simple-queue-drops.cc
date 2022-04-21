@@ -63,7 +63,7 @@ main (int argc, char *argv[])
   pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
   NetDeviceContainer devn0n1 = pointToPoint.Install (n0n1);
 
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("1Mbps"));
   pointToPoint.SetChannelAttribute ("Delay", StringValue ("1ms"));
   NetDeviceContainer devn1n2 = pointToPoint.Install (n1n2);
 
@@ -112,7 +112,7 @@ main (int argc, char *argv[])
   clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
   clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
   clientHelper.SetAttribute ("PacketSize", UintegerValue (100));
-  clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("1Mb/s")));
+  clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
 
   ApplicationContainer clientApp;
   AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
