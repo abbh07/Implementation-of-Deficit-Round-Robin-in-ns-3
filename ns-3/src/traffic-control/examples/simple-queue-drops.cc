@@ -57,18 +57,15 @@ main (int argc, char *argv[])
 
 
   // Setup channel
+  // Setup NIC
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("10Kbps"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
   NetDeviceContainer devn0n1 = pointToPoint.Install (n0n1);
-//  pointToPoint.SetQueue ("ns3::DropTailQueue");
 
-  // Setup NIC
-//  pointToPoint.SetQueue ("ns3::DropTailQueue");
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Kbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("10ms"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("1ms"));
   NetDeviceContainer devn1n2 = pointToPoint.Install (n1n2);
-//  queueDiscs = tch.Install (devn1n2);
 
   // Setup IP
   InternetStackHelper stack;
@@ -94,49 +91,35 @@ main (int argc, char *argv[])
   uint16_t port = 50000;
   Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
   PacketSinkHelper sinkHelper ("ns3::UdpSocketFactory", sinkLocalAddress);
-  ApplicationContainer sinkApp = sinkHelper.Install (n0n1.Get (1));
+  ApplicationContainer sinkApp = sinkHelper.Install (n1n2.Get (1));
   sinkApp.Start (Seconds (0.0));
   sinkApp.Stop (Seconds (10.0));
 
-//  UdpEchoServerHelper echoServer (9);
-//
-//  ApplicationContainer serverApps = echoServer.Install (nodes.Get (1));
-//  serverApps.Start (Seconds (1.0));
-//  serverApps.Stop (Seconds (10.0));
-//
-//  UdpEchoClientHelper echoClient (interfaces.GetAddress (1), 9);
-//  echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
-//  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-//  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
-//
-//  ApplicationContainer clientApps = echoClient.Install (nodes.Get (0));
-//  clientApps.Start (Seconds (2.0));
-//  clientApps.Stop (Seconds (10.0));
-
   // Setup source application
-  UdpClientHelper echoClient (i0i1.GetAddress (1), port);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (10000));
-  echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.1)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (10240));
-
-  ApplicationContainer clientApp = echoClient.Install (n0n1.Get (0));
+  // Udp client doesn't work with packet sink
+//  UdpClientHelper echoClient (i0i1.GetAddress (1), port);
+//  echoClient.SetAttribute ("MaxPackets", UintegerValue (10000));
+//  echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.1)));
+//  echoClient.SetAttribute ("PacketSize", UintegerValue (10240));
+//
+//  ApplicationContainer clientApp = echoClient.Install (n0n1.Get (0));
 //  AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
 //  echoClient.SetAttribute ("Remote", remoteAddress);
-  clientApp.Start (Seconds (2.0));
-  clientApp.Stop (Seconds (10.0));
-
-//  OnOffHelper clientHelper ("ns3::UdpSocketFactory", Address ());
-//  clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-//  clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-//  clientHelper.SetAttribute ("PacketSize", UintegerValue (1000));
-//  clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
-//
-//  ApplicationContainer clientApp;
-//  AddressValue remoteAddress (InetSocketAddress (i0i1.GetAddress (1), port));
-//  clientHelper.SetAttribute ("Remote", remoteAddress);
-//  clientApp.Add (clientHelper.Install (n0n1.Get (0)));
-//  clientApp.Start (Seconds (1.0));
+//  clientApp.Start (Seconds (2.0));
 //  clientApp.Stop (Seconds (10.0));
+
+  OnOffHelper clientHelper ("ns3::UdpSocketFactory", Address ());
+  clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  clientHelper.SetAttribute ("PacketSize", UintegerValue (100));
+  clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("1Mb/s")));
+
+  ApplicationContainer clientApp;
+  AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
+  clientHelper.SetAttribute ("Remote", remoteAddress);
+  clientApp.Add (clientHelper.Install (n0n1.Get (0)));
+  clientApp.Start (Seconds (1.0));
+  clientApp.Stop (Seconds (8.0));
 
   Ptr<QueueDisc> q = queueDiscs.Get (0);
 
@@ -144,22 +127,10 @@ main (int argc, char *argv[])
   FlowMonitorHelper flowmon;
   Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
-//  QueueDisc::Stats st = queueDiscs.Get (0)->GetStats ();
   Simulator::Stop (Seconds (10.0));
   Simulator::Run ();
 
-//  std::string pathOut;
-//  pathOut = "."; // Current directory
-//  std::stringstream stmp;
-//  stmp << pathOut << "/drr.flowmon";
-//  flowmon->SerializeToXmlFile (stmp.str ().c_str (), false, false);
-
-//  std::cout << "*** DRR stats from Node 2 queue ***" << std::endl;
-//  std::cout << "\t " << st.GetNDroppedPackets (DRRQueueDisc::UNCLASSIFIED_DROP)
-//            << " drops because packet could not be classified by any filter" << std::endl;
-
-
-
+  // Logging
   Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
   std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
   std::cout << std::endl << "*** Flow monitor statistics ***" << std::endl;
@@ -168,7 +139,6 @@ main (int argc, char *argv[])
   std::cout << "  Offered Load: " << stats[1].txBytes * 8.0 / (stats[1].timeLastTxPacket.GetSeconds () - stats[1].timeFirstTxPacket.GetSeconds ()) / 1000000 << " Mbps" << std::endl;
   std::cout << "  Rx Packets/Bytes:   " << stats[1].rxPackets
             << " / " << stats[1].rxBytes << std::endl;
-
 
   uint32_t packetsDroppedByQueueDisc = 0;
   uint64_t bytesDroppedByQueueDisc = 0;
@@ -179,7 +149,6 @@ main (int argc, char *argv[])
     }
   std::cout << "  Packets/Bytes Dropped by Queue Disc:   " << packetsDroppedByQueueDisc
             << " / " << bytesDroppedByQueueDisc << std::endl;
-
 
   uint32_t packetsDroppedByNetDevice = 0;
   uint64_t bytesDroppedByNetDevice = 0;
@@ -211,16 +180,15 @@ main (int argc, char *argv[])
   std::cout << "  Rx Bytes: " << totalPacketsThr << std::endl;
   std::cout << "  Average Goodput: " << thr << " Mbit/s" << std::endl;
 
-  std::cout << std::endl << "*** Tx Application statistics ***" << std::endl;
-  double thr1 = 0;
-  uint64_t totalPacketsThr1 = DynamicCast<UdpClient> (clientApp.Get (0))->GetTotalTx ();
-  thr1 = totalPacketsThr1 * 8 / (simulationTime * 1000000.0); //Mbit/s
-  std::cout << "  Tx Bytes: " << totalPacketsThr1 << std::endl;
-  std::cout << "  Average Goodput: " << thr1 << " Mbit/s" << std::endl;
+//  std::cout << std::endl << "*** Tx Application statistics ***" << std::endl;
+//  double thr1 = 0;
+//  uint64_t totalPacketsThr1 = DynamicCast<UdpClient> (clientApp.Get (0))->GetTotalTx ();
+//  thr1 = totalPacketsThr1 * 8 / (simulationTime * 1000000.0); //Mbit/s
+//  std::cout << "  Tx Bytes: " << totalPacketsThr1 << std::endl;
+//  std::cout << "  Average Goodput: " << thr1 << " Mbit/s" << std::endl;
 
   std::cout << std::endl << "*** TC Layer statistics ***" << std::endl;
   std::cout << q->GetStats () << std::endl;
 
-//  Simulator::Destroy ();
   return 0;
 }
