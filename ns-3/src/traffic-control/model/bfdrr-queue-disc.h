@@ -20,11 +20,12 @@
  *          Vilas M <vilasnitk19@gmail.com>
 */
 
-#ifndef DWDRR_QUEUE_DISC
-#define DWDRR_QUEUE_DISC
+#ifndef BFDRR_QUEUE_DISC
+#define BFDRR_QUEUE_DISC
 
 #include "ns3/queue-disc.h"
 #include "ns3/object-factory.h"
+#include "ns3/flow-tag.h"
 #include <list>
 #include <map>
 
@@ -33,10 +34,10 @@ namespace ns3 {
 /**
 * \ingroup traffic-control
 *
-* \brief A flow queue used by the DWDRR queue disc
+* \brief A flow queue used by the BFDRRFlow queue disc
 */
 
-class DWDRRFlow : public QueueDiscClass
+class BFDRRFlow : public QueueDiscClass
 {
 public:
   /**
@@ -47,11 +48,11 @@ public:
 
 
   /**
-   * \brief DWDRRFlow constructor
+   * \brief BFDRRFlow constructor
    */
-  DWDRRFlow ();
+  BFDRRFlow ();
 
-  virtual ~DWDRRFlow ();
+  virtual ~BFDRRFlow ();
 
 
   /**
@@ -99,20 +100,26 @@ public:
    */
   FlowStatus GetStatus (void) const;
 
+  FlowType GetFlowType(void) const;
+
+  void SetFlowType(FlowType flowType);
+
+
 
 private:
   uint32_t m_deficit;   //!< the deficit for this flow
   FlowStatus m_status; //!< the status of this flow
+  FlowType m_flowType;
 };
 
 
 /**
 * \ingroup traffic-control
 *
-* \brief A DWDRRpacket queue disc
+* \brief A BFDRRpacket queue disc
 */
 
-class DWDRRQueueDisc : public QueueDisc
+class BFDRRQueueDisc : public QueueDisc
 {
 public:
   /**
@@ -121,11 +128,11 @@ public:
    */
   static TypeId GetTypeId (void);
   /**
-   * \brief DWDRRQueueDisc constructor
+   * \brief BFDRRQueueDisc constructor
    */
-  DWDRRQueueDisc ();
+  BFDRRQueueDisc ();
 
-  virtual ~DWDRRQueueDisc ();
+  virtual ~BFDRRQueueDisc ();
 
 
   /**
@@ -159,15 +166,17 @@ private:
    * \brief Drop a packet from the tail of the queue with the largest current byte count (Packet Stealing)
    * \return the index of the queue with the largest current byte count
    */
-  uint32_t DWDRRDrop (void);
+  uint32_t BFDRRDrop (void);
 
   uint32_t m_packets;      //!< cumulative sum of packets across all flows
-  uint32_t m_limit;              //!< Maximum number of bytes in the queue disc
+  uint32_t m_soft_limit;              //!< Maximum number of bytes in the queue disc
+  uint32_t m_hard_limit;              //!< Maximum number of bytes in the queue disc
   uint32_t m_quantum;        //!< total number of bytes that a flow can send
   uint32_t m_flows;          //!< Number of flow queues
 
+  std::list<Ptr<BFDRRFlow> > m_overflowingBurstyFlows;
 
-  std::list<Ptr<DWDRRFlow> > m_flowList;    //!< The list of flows
+  std::list<Ptr<BFDRRFlow> > m_flowList;    //!< The list of flows
 
   std::map<uint32_t, uint32_t> m_flowsIndices;    //!< Map with the index of class for each flow
 
@@ -177,4 +186,4 @@ private:
 
 } // namespace ns3
 
-#endif /* DWDRR_QUEUE_DISC */
+#endif /* BFDRR_QUEUE_DISC */

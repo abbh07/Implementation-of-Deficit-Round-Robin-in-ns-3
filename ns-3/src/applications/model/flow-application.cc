@@ -212,7 +212,7 @@ void FlowApplication::SendBursty ()
   // Create a bursty flow like-> ||||| ||||     ||||||           ||||| |||||||
 
   Ptr<NormalRandomVariable> rand = CreateObject<NormalRandomVariable> ();
-  uint32_t packetsToSend = rand->GetInteger(static_cast<uint32_t>(m_max_packets/2), static_cast<uint32_t>(m_max_packets/4), m_max_packets);
+  uint32_t packetsToSend = rand->GetInteger(static_cast<uint32_t>(m_max_packets/2), static_cast<uint32_t>(m_max_packets/2), m_max_packets);
 
   Time random_offset = MilliSeconds (rand->GetValue(1000, 200));
   NS_LOG_INFO("Sending " << packetsToSend << " packets  with delay of " << random_offset);
@@ -228,12 +228,12 @@ void FlowApplication::SendBursty ()
       {
         ++m_sent;
         m_totalTx += pkt->GetSize ();
-#ifdef NS3_LOG_ENABLE
-        NS_LOG_INFO ("TraceDelay TX " << m_size << " bytes to "
-                                  << m_peerAddressString << " Uid: "
-                                  << pkt->GetUid () << " Time: "
-                                  << (Simulator::Now ()).As (Time::S));
-#endif // NS3_LOG_ENABLE
+//#ifdef NS3_LOG_ENABLE
+//        NS_LOG_INFO ("TraceDelay TX " << m_size << " bytes to "
+//                                  << m_peerAddressString << " Uid: "
+//                                  << pkt->GetUid () << " Time: "
+//                                  << (Simulator::Now ()).As (Time::S));
+//#endif // NS3_LOG_ENABLE
       }
     }
 
@@ -248,6 +248,8 @@ void FlowApplication::SendHeavy ()
   Ptr<NormalRandomVariable> normalRand = CreateObject<NormalRandomVariable> ();
   Time random_offset = MilliSeconds (normalRand->GetValue(10,2));
 
+  NS_LOG_INFO("Sending " << packetsToSend << " packets  with delay of " << random_offset);
+
   for (uint32_t i = 0; i < packetsToSend; i++)
     {
       Ptr<Packet> pkt = Create<Packet> (m_size-sizeof (FlowType));
@@ -259,12 +261,12 @@ void FlowApplication::SendHeavy ()
         {
           ++m_sent;
           m_totalTx += pkt->GetSize ();
-#ifdef NS3_LOG_ENABLE
-          NS_LOG_INFO ("TraceDelay TX " << m_size << " bytes to "
-                                        << m_peerAddressString << " Uid: "
-                                        << pkt->GetUid () << " Time: "
-                                        << (Simulator::Now ()).As (Time::S));
-#endif // NS3_LOG_ENABLE
+//#ifdef NS3_LOG_ENABLE
+//          NS_LOG_INFO ("TraceDelay TX " << m_size << " bytes to "
+//                                        << m_peerAddressString << " Uid: "
+//                                        << pkt->GetUid () << " Time: "
+//                                        << (Simulator::Now ()).As (Time::S));
+//#endif // NS3_LOG_ENABLE
         }
     }
 
@@ -279,6 +281,8 @@ void FlowApplication::SendLight ()
   Ptr<NormalRandomVariable> normalRand = CreateObject<NormalRandomVariable> ();
   Time random_offset = MilliSeconds (normalRand->GetValue(100,20));
 
+  NS_LOG_INFO("Sending " << packetsToSend << " packets  with delay of " << random_offset);
+
   for (uint32_t i = 0; i < packetsToSend; i++)
     {
       Ptr<Packet> pkt = Create<Packet> (m_size-sizeof (FlowType));
@@ -290,12 +294,12 @@ void FlowApplication::SendLight ()
         {
           ++m_sent;
           m_totalTx += pkt->GetSize ();
-#ifdef NS3_LOG_ENABLE
-          NS_LOG_INFO ("TraceDelay TX " << m_size << " bytes to "
-                                        << m_peerAddressString << " Uid: "
-                                        << pkt->GetUid () << " Time: "
-                                        << (Simulator::Now ()).As (Time::S));
-#endif // NS3_LOG_ENABLE
+//#ifdef NS3_LOG_ENABLE
+//          NS_LOG_INFO ("TraceDelay TX " << m_size << " bytes to "
+//                                        << m_peerAddressString << " Uid: "
+//                                        << pkt->GetUid () << " Time: "
+//                                        << (Simulator::Now ()).As (Time::S));
+//#endif // NS3_LOG_ENABLE
         }
     }
 

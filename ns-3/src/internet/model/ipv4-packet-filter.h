@@ -73,6 +73,29 @@ private:
 
 };
 
+
+/**
+ * \ingroup internet
+ *
+ * DRRIpv4PacketFilter is the filter to be added to the DRRQueueDisc
+ * to simulate the behavior of the DRR Linux queue disc.
+ *       */
+class BFDRRIpv4PacketFilter : public Ipv4PacketFilter {
+public:
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+
+  BFDRRIpv4PacketFilter ();
+  virtual ~BFDRRIpv4PacketFilter ();
+
+private:
+  virtual int32_t DoClassify (Ptr<QueueDiscItem> item) const;
+
+};
+
 } // namespace ns3
 
 #endif /* IPV4_PACKET_FILTER */

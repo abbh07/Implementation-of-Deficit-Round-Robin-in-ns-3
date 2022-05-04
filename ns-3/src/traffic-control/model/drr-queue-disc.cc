@@ -324,7 +324,7 @@ DRRQueueDisc::InitializeParams (void)
   m_queueDiscFactory.SetTypeId ("ns3::CoDelQueueDisc");
 
   //m_queueDiscFactory.Set ("Mode", EnumValue (QueueBase::QUEUE_MODE_BYTES));
-  //m_queueDiscFactory.Set ("MaxPackets", UintegerValue (m_limit + 1));
+  //m_queueDiscFactory.Set ("MaxPackets", UintegerValue (m_soft_limit + 1));
   // m_queueDiscFactory.Set ("Interval", StringValue (m_interval));
   //m_queueDiscFactory.Set ("Target", StringValue (m_target));
 }

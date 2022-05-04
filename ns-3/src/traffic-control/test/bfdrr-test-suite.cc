@@ -64,7 +64,7 @@ DWDRRQueueDiscNoSuitableFilter::DoRun (void)
 {
   // Packets that cannot be classified by the available filters should be dropped
   Ptr<DWDRRQueueDisc> queueDisc = CreateObjectWithAttributes<DWDRRQueueDisc> ("ByteLimit", UintegerValue (1000));
-  Ptr<DWDRRIpv4PacketFilter> filter = CreateObject<DWDRRIpv4PacketFilter> ();
+  Ptr<DRRIpv4PacketFilter> filter = CreateObject<DRRIpv4PacketFilter> ();
   queueDisc->AddPacketFilter (filter);
 
   // test 1: simple enqueue/dequeue with defaults, no drops
@@ -128,8 +128,8 @@ void
 DWDRRQueueDiscIPFlowsSeparationAndByteLimit::DoRun (void)
 {
   Ptr<DWDRRQueueDisc> queueDisc = CreateObjectWithAttributes<DWDRRQueueDisc> ("ByteLimit", UintegerValue (2500));
-  //Ptr<DWDRRIpv6PacketFilter> ipv6Filter = CreateObject<DWDRRIpv6PacketFilter> ();
-  Ptr<DWDRRIpv4PacketFilter> ipv4Filter = CreateObject<DWDRRIpv4PacketFilter> ();
+  //Ptr<DRRIpv6PacketFilter> ipv6Filter = CreateObject<DRRIpv6PacketFilter> ();
+  Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
   //queueDisc->AddPacketFilter (ipv6Filter);
   queueDisc->AddPacketFilter (ipv4Filter);
 
@@ -211,8 +211,8 @@ void
 DWDRRQueueDiscTCPFlowsSeparation::DoRun (void)
 {
   Ptr<DWDRRQueueDisc> queueDisc = CreateObjectWithAttributes<DWDRRQueueDisc> ("ByteLimit", UintegerValue (4000));
-  //Ptr<DWDRRIpv6PacketFilter> ipv6Filter = CreateObject<DWDRRIpv6PacketFilter> ();
-  Ptr<DWDRRIpv4PacketFilter> ipv4Filter = CreateObject<DWDRRIpv4PacketFilter> ();
+  //Ptr<DRRIpv6PacketFilter> ipv6Filter = CreateObject<DRRIpv6PacketFilter> ();
+  Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
   //queueDisc->AddPacketFilter (ipv6Filter);
   queueDisc->AddPacketFilter (ipv4Filter);
 
@@ -302,8 +302,8 @@ void
 DWDRRQueueDiscUDPFlowsSeparation::DoRun (void)
 {
   Ptr<DWDRRQueueDisc> queueDisc = CreateObjectWithAttributes<DWDRRQueueDisc> ("ByteLimit", UintegerValue (4000));
-//  Ptr<DWDRRIpv6PacketFilter> ipv6Filter = CreateObject<DWDRRIpv6PacketFilter> ();
-  Ptr<DWDRRIpv4PacketFilter> ipv4Filter = CreateObject<DWDRRIpv4PacketFilter> ();
+//  Ptr<DRRIpv6PacketFilter> ipv6Filter = CreateObject<DRRIpv6PacketFilter> ();
+  Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
   // queueDisc->AddPacketFilter (ipv6Filter);
   queueDisc->AddPacketFilter (ipv4Filter);
 
@@ -393,8 +393,8 @@ void
 DWDRRQueueDiscDeficitVariableSizeSameFlow::DoRun (void)
 {
   Ptr<DWDRRQueueDisc> queueDisc = CreateObjectWithAttributes<DWDRRQueueDisc> ();
-  //Ptr<DWDRRIpv6PacketFilter> ipv6Filter = CreateObject<DWDRRIpv6PacketFilter> ();
-  Ptr<DWDRRIpv4PacketFilter> ipv4Filter = CreateObject<DWDRRIpv4PacketFilter> ();
+  //Ptr<DRRIpv6PacketFilter> ipv6Filter = CreateObject<DRRIpv6PacketFilter> ();
+  Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
   // queueDisc->AddPacketFilter (ipv6Filter);
   queueDisc->AddPacketFilter (ipv4Filter);
 
@@ -507,8 +507,8 @@ void
 DWDRRQueueDiscDeficitVariableSizeDifferentFlow::DoRun (void)
 {
   Ptr<DWDRRQueueDisc> queueDisc = CreateObjectWithAttributes<DWDRRQueueDisc> ();
-  //Ptr<DWDRRIpv6PacketFilter> ipv6Filter = CreateObject<DWDRRIpv6PacketFilter> ();
-  Ptr<DWDRRIpv4PacketFilter> ipv4Filter = CreateObject<DWDRRIpv4PacketFilter> ();
+  //Ptr<DRRIpv6PacketFilter> ipv6Filter = CreateObject<DRRIpv6PacketFilter> ();
+  Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
   // queueDisc->AddPacketFilter (ipv6Filter);
   queueDisc->AddPacketFilter (ipv4Filter);
 
@@ -580,7 +580,7 @@ public:
 DWDRRQueueDiscTestSuite::DWDRRQueueDiscTestSuite ()
   : TestSuite ("dwdrr-queue-disc", UNIT)
 {
-  AddTestCase (new DWDWDRRQueueDiscNoSuitableFilter, TestCase::QUICK);
+  AddTestCase (new DWDRRQueueDiscNoSuitableFilter, TestCase::QUICK);
   AddTestCase (new DWDRRQueueDiscIPFlowsSeparationAndByteLimit, TestCase::QUICK);
   AddTestCase (new DWDRRQueueDiscTCPFlowsSeparation, TestCase::QUICK);
   AddTestCase (new DWDRRQueueDiscUDPFlowsSeparation, TestCase::QUICK);

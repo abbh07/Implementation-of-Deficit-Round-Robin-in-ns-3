@@ -25,6 +25,9 @@
 #include "ns3/drop-tail-queue.h"
 #include "ns3/global-router-interface.h"
 #include "ns3/ipv4-flow-probe.h"
+#include "ns3/udp-socket-factory.h"
+#include "ns3/bfdrr-queue-disc.h"
+
 
 using namespace ns3;
 
@@ -39,8 +42,12 @@ main (int argc, char *argv[])
   // Enable logs
   LogComponentEnableAll (LOG_PREFIX_TIME);
   LogComponentEnable ("FirstScriptExample", LOG_INFO);
-  LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
-  LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
+//  LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
+  LogComponentEnable ("FlowApplication", LOG_LEVEL_INFO);
+//  LogComponentEnable ("PfifoFastQueueDisc", LOG_LEVEL_INFO);
+//  LogComponentEnable ("DropTailQueue", LOG_LEVEL_INFO);
+
+
 
   Time::SetResolution (Time::NS);
 
@@ -51,9 +58,9 @@ main (int argc, char *argv[])
   NodeContainer n1n2 = NodeContainer (nodes.Get (1), nodes.Get (2));
 
   TrafficControlHelper tch;
-  uint16_t handle = tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc");
+  uint16_t handle = tch.SetRootQueueDisc ("ns3::BFDRRQueueDisc");
   // Pfifo q have min size 1000 with min 3 internal q
-  tch.AddInternalQueues (handle, 3, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+  tch.AddInternalQueues (handle, 1, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 
 
   // Setup channel
@@ -114,12 +121,28 @@ main (int argc, char *argv[])
   clientHelper.SetAttribute ("PacketSize", UintegerValue (100));
   clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
 
+  Ptr<FlowApplication> flowApplication = CreateObject<FlowApplication> ();
+  flowApplication->SetFlowType (FlowType::LIGHT);
+  flowApplication->SetRemote (i1i2.GetAddress (1), port);
+  flowApplication->SetPacketSize (100);
+  flowApplication->SetMaxPackets (100);
+  flowApplication->SetProtocol (UdpSocketFactory::GetTypeId());
+  //  flowApplication.SetAttribute ("FlowType", "Bursty");
+//  flowApplication.SetAttribute ("RemoteAddress", i1i2.GetAddress (1));
+//  flowApplication.SetAttribute ("RemotePort", port);
+
+  n0n1.Get (0)->AddApplication (flowApplication);
   ApplicationContainer clientApp;
-  AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
-  clientHelper.SetAttribute ("Remote", remoteAddress);
-  clientApp.Add (clientHelper.Install (n0n1.Get (0)));
+  clientApp.Add (flowApplication);
   clientApp.Start (Seconds (1.0));
   clientApp.Stop (Seconds (8.0));
+
+//  ApplicationContainer clientApp;
+//  AddressValue remoteAddress (InetSocketAddress (i1i2.GetAddress (1), port));
+//  clientHelper.SetAttribute ("Remote", remoteAddress);
+//  clientApp.Add (clientHelper.Install (n0n1.Get (0)));
+//  clientApp.Start (Seconds (1.0));
+//  clientApp.Stop (Seconds (8.0));
 
   Ptr<QueueDisc> q = queueDiscs.Get (0);
 
