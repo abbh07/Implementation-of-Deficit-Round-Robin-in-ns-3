@@ -169,7 +169,7 @@ DRRIpv4PacketFilter::DoClassify (Ptr<QueueDiscItem> item) const
 
 // ------------------------------------------------------------------------- //
 
-NS_OBJECT_ENSURE_REGISTERED (DRRIpv4PacketFilter);
+NS_OBJECT_ENSURE_REGISTERED (BFDRRIpv4PacketFilter);
 
 TypeId
 BFDRRIpv4PacketFilter::GetTypeId (void)

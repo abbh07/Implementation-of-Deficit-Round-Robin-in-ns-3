@@ -121,6 +121,8 @@ private:
 
 class BFDRRQueueDisc : public QueueDisc
 {
+  static constexpr const char* LIMIT_EXCEEDED_DROP = "Queue disc limit exceeded";  //!< Packet dropped due to queue disc limit exceeded
+
 public:
   /**
    * \brief Get the type ID.

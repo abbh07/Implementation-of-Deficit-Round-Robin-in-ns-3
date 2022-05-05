@@ -27,6 +27,7 @@
 #include "ns3/ipv4-flow-probe.h"
 #include "ns3/udp-socket-factory.h"
 #include "ns3/bfdrr-queue-disc.h"
+#include "ns3/log.h"
 
 
 using namespace ns3;
@@ -41,9 +42,20 @@ main (int argc, char *argv[])
 
   // Enable logs
   LogComponentEnableAll (LOG_PREFIX_TIME);
+  LogComponentEnable ("BFDRRQueueDisc", LOG_DEBUG);
+  LogComponentEnable ("BFDRRQueueDisc", LOG_INFO);
+//  LogComponentEnable ("BFDRRFlow", LOG_INFO);
+  LogComponentEnable ("Ipv4PacketFilter", LOG_DEBUG);
+  LogComponentEnable ("Ipv4PacketFilter", LOG_INFO);
+  LogComponentEnable ("FlowTag", LOG_DEBUG);
+  LogComponentEnable ("FlowTag", LOG_INFO);
+  LogComponentEnable ("FirstScriptExample", LOG_DEBUG);
   LogComponentEnable ("FirstScriptExample", LOG_INFO);
-//  LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-  LogComponentEnable ("FlowApplication", LOG_LEVEL_INFO);
+  LogComponentEnable ("QueueDisc", LOG_DEBUG);
+  LogComponentEnable ("QueueDisc", LOG_INFO);
+//  LogComponentEnable ("QueueDisc", LOG_FUNCTION);
+  LogComponentEnable ("FlowApplication", LOG_DEBUG);
+  LogComponentEnable ("FlowApplication", LOG_INFO);
 //  LogComponentEnable ("PfifoFastQueueDisc", LOG_LEVEL_INFO);
 //  LogComponentEnable ("DropTailQueue", LOG_LEVEL_INFO);
 
@@ -58,9 +70,9 @@ main (int argc, char *argv[])
   NodeContainer n1n2 = NodeContainer (nodes.Get (1), nodes.Get (2));
 
   TrafficControlHelper tch;
-  uint16_t handle = tch.SetRootQueueDisc ("ns3::BFDRRQueueDisc");
+  tch.SetRootQueueDisc ("ns3::BFDRRQueueDisc");
   // Pfifo q have min size 1000 with min 3 internal q
-  tch.AddInternalQueues (handle, 1, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+//  tch.AddInternalQueues (handle, 1, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 
 
   // Setup channel
@@ -122,7 +134,7 @@ main (int argc, char *argv[])
   clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
 
   Ptr<FlowApplication> flowApplication = CreateObject<FlowApplication> ();
-  flowApplication->SetFlowType (FlowType::LIGHT);
+  flowApplication->SetFlowType (FlowType::BURSTY);
   flowApplication->SetRemote (i1i2.GetAddress (1), port);
   flowApplication->SetPacketSize (100);
   flowApplication->SetMaxPackets (100);

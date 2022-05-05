@@ -22,15 +22,18 @@
 
 #include "ns3/log.h"
 #include "ns3/string.h"
+#include "ns3/drop-tail-queue.h"
 #include "ns3/queue.h"
 #include "bfdrr-queue-disc.h"
 #include "ns3/net-device-queue-interface.h"
 #include "ns3/ipv4-packet-filter.h"
 #include "codel-queue-disc.h"
+#include <algorithm>
 
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("BFDRRQueueDisc");
+//NS_LOG_COMPONENT_DEFINE ("BFDRRFlow");
 
 NS_OBJECT_ENSURE_REGISTERED (BFDRRFlow);
 
@@ -184,36 +187,39 @@ BFDRRQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   Ptr<QueueDisc> qd;
   if (m_flowsIndices.find (h) == m_flowsIndices.end ())
     {
-      NS_LOG_DEBUG ("Creating a new flow queue with index " << h);
+      NS_LOG_INFO ("Creating a new flow queue with index " << h);
       flow = m_flowFactory.Create<BFDRRFlow> ();
 
       // Set flow type from packet tag
-      Ptr<Packet> packet = item.GetPacket();
+      Ptr<Packet> packet = item->GetPacket();
       FlowTag packetTag;
       packet->PeekPacketTag (packetTag);
       flow->SetFlowType(packetTag.GetFlowType());
 
-      qd = m_queueDiscFactory.Create<QueueDisc> ();
+//      Ptr<DropTailQueue<QueueDiscItem> > queue = CreateObject<DropTailQueue<QueueDiscItem> > ();
+      qd = m_queueDiscFactory.Create<DropTailQueue> ();
       qd->Initialize ();
       flow->SetQueueDisc (qd);
       AddQueueDiscClass (flow); // Basically higher level queue disc (this) lists its flows as queue disc class (possibly synonymous to flow)
+      NS_LOG_INFO ("max q size " << qd->GetMaxSize());
 
       m_flowsIndices[h] = GetNQueueDiscClasses () - 1;
     }
   else
     {
-      qd = GetQueueDiscClass (m_flowsIndices[h])->GetQueueDic();
+      qd = GetQueueDiscClass (m_flowsIndices[h])->GetQueueDisc();
       flow = StaticCast<BFDRRFlow> (GetQueueDiscClass (m_flowsIndices[h]));
     }
+  NS_LOG_INFO ("current q size " << qd->GetNBytes());
 
   // Get limit for the type of flow
   uint32_t limit = m_soft_limit;
-  if (flow->GetFlowType ()== FlowType.BURSTY)
+  if (flow->GetFlowType ()== FlowType::BURSTY)
     {
       limit = m_hard_limit;
     }
 
-  if (qd->GetCurrentSize () + item > limit)
+  if ((qd->GetNBytes () + item->GetPacket()->GetSize()) > limit)
     {
       NS_LOG_LOGIC ("Queue full -- dropping pkt");
       DropBeforeEnqueue (item, LIMIT_EXCEEDED_DROP);
@@ -221,8 +227,9 @@ BFDRRQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     }
 
   // Indicates a bursty flow is overflowing its bursty limit
-  if (qd->GetCurrentSize () + item > m_soft_limit)
+  if (qd->GetNBytes () + item->GetPacket()->GetSize() > m_soft_limit)
     {
+      NS_LOG_LOGIC ("Overflowing bursty flow detected. Increasing the limit temporarily");
       m_overflowingBurstyFlows.push_back(flow);
     }
 
@@ -286,12 +293,13 @@ BFDRRQueueDisc::DoDequeue (void)
             }
 
           // If this was an overflowing bursty flow, and now it is under soft limit, remove it from the list
-          if (m_overflowingBurstyFlows.find (flow) != m_overflowingBurstyFlows.end () &&
-              flow->GetQueueDisc ()->GetCurrentSize () <= m_soft_limit)
+          if (std::find(m_overflowingBurstyFlows.begin(), m_overflowingBurstyFlows.end(), flow) != m_overflowingBurstyFlows.end () &&
+              (flow->GetQueueDisc ()->GetNBytes()) <= m_soft_limit)
             {
-              m_overflowingBurstyFlows.erase (std::remove (m_overflowingBurstyFlows.begin (),
-                                                           m_overflowingBurstyFlows.end (), flow),
-                                              m_overflowingBurstyFlows.end ());
+              m_overflowingBurstyFlows.remove (flow);
+//              m_overflowingBurstyFlows.erase (std::remove (m_overflowingBurstyFlows.begin (),
+//                                                           m_overflowingBurstyFlows.end (), flow),
+//                                              m_overflowingBurstyFlows.end ());
             }
 
           return item;
@@ -303,10 +311,7 @@ BFDRRQueueDisc::DoDequeue (void)
           m_flowList.push_back (flow);
           item = 0;
         }
-    }
-
-  }
-  while (item == 0);
+    } while (item == 0);
 
   return 0; //never reached
 }
