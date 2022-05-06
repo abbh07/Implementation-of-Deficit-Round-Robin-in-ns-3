@@ -22,92 +22,20 @@
 
 #include "ns3/log.h"
 #include "ns3/string.h"
-#include "ns3/drop-tail-queue.h"
 #include "ns3/queue.h"
-#include "bfdrr-queue-disc.h"
+#include "ns3/bfdrr-queue-disc.h"
 #include "ns3/net-device-queue-interface.h"
 #include "ns3/ipv4-packet-filter.h"
-#include "codel-queue-disc.h"
 #include <algorithm>
+#include <list>
+#include "ns3/bfdrrflow.h"
 
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("BFDRRQueueDisc");
-//NS_LOG_COMPONENT_DEFINE ("BFDRRFlow");
-
-NS_OBJECT_ENSURE_REGISTERED (BFDRRFlow);
-
-TypeId
-BFDRRFlow::GetTypeId (void)
-{
-  static TypeId tid = TypeId ("ns3::BFDRRFlow")
-                          .SetParent<QueueDiscClass> ()
-                          .SetGroupName ("TrafficControl")
-                          .AddConstructor<BFDRRFlow> ()
-      ;
-  return tid;
-}
-
-BFDRRFlow::BFDRRFlow ()
-    : m_deficit (0),
-      m_status (INACTIVE)
-{
-  NS_LOG_FUNCTION (this);
-}
-
-BFDRRFlow::~BFDRRFlow ()
-{
-  NS_LOG_FUNCTION (this);
-}
-
-void
-BFDRRFlow::SetDeficit (uint32_t deficit)
-{
-  NS_LOG_FUNCTION (this << deficit);
-  m_deficit = deficit;
-}
-
-int32_t
-BFDRRFlow::GetDeficit (void) const
-{
-  NS_LOG_FUNCTION (this);
-  return m_deficit;
-}
-
-void
-BFDRRFlow::IncreaseDeficit (int32_t deficit)
-{
-  NS_LOG_FUNCTION (this << deficit);
-  m_deficit += deficit;
-}
-
-void
-BFDRRFlow::SetStatus (FlowStatus status)
-{
-  NS_LOG_FUNCTION (this);
-  m_status = status;
-}
-
-BFDRRFlow::FlowStatus
-BFDRRFlow::GetStatus (void) const
-{
-  NS_LOG_FUNCTION (this);
-  return m_status;
-}
-FlowType
-BFDRRFlow::GetFlowType (void) const
-{
-  NS_LOG_FUNCTION (this);
-  return m_flowType;
-}
-void
-BFDRRFlow::SetFlowType (FlowType flowType)
-{
-  NS_LOG_FUNCTION (this);
-  m_flowType = flowType;
-}
 
 NS_OBJECT_ENSURE_REGISTERED (BFDRRQueueDisc);
+
 
 TypeId
 BFDRRQueueDisc::GetTypeId (void)
@@ -116,16 +44,16 @@ BFDRRQueueDisc::GetTypeId (void)
                           .SetParent<QueueDisc> ()
                           .SetGroupName ("TrafficControl")
                           .AddConstructor<BFDRRQueueDisc> ()
-                          .AddAttribute ("ByteSoftLimit",
-                                         "The soft limit on the real queue size, measured in bytes",
-                                         UintegerValue (80 * 1024),
-                                         MakeUintegerAccessor (&BFDRRQueueDisc::m_soft_limit),
-                                         MakeUintegerChecker<uint32_t> ())
-                          .AddAttribute ("ByteHardLimit",
-                                         "The hard limit on the real queue size, measured in bytes",
-                                         UintegerValue (100 * 1024),
-                                         MakeUintegerAccessor (&BFDRRQueueDisc::m_hard_limit),
-                                         MakeUintegerChecker<uint32_t> ())
+                          .AddAttribute ("SoftLimit",
+                                         "The maximum number of packets accepted by this queue disc.",
+                                         QueueSizeValue (QueueSize ("80p")),
+                                         MakeQueueSizeAccessor (&BFDRRQueueDisc::m_soft_limit),
+                                         MakeQueueSizeChecker ())
+                          .AddAttribute ("HardLimit",
+                                         "The maximum number of packets accepted by this queue disc.",
+                                         QueueSizeValue (QueueSize ("100p")),
+                                         MakeQueueSizeAccessor (&BFDRRQueueDisc::m_hard_limit),
+                                         MakeQueueSizeChecker ())
                           .AddAttribute ("Flows",
                                          "The number of queues into which the incoming packets are classified",
                                          UintegerValue (1024),
@@ -139,6 +67,9 @@ BFDRRQueueDisc::BFDRRQueueDisc ()
     : m_quantum (0)
 {
   NS_LOG_FUNCTION (this);
+  m_flowFactory.SetTypeId ("ns3::DropTailQueue<QueueDiscItem>");
+  // Change max size to soft or hard limit based on type of flow
+  m_flowFactory.Set ("MaxSize", QueueSizeValue (m_hard_limit));
   AddPacketFilter(CreateObject<BFDRRIpv4PacketFilter>());
 }
 
@@ -183,43 +114,43 @@ BFDRRQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
 
   // Add check for more than m_flows but that isn't necessary rn.
 
-  Ptr<BFDRRFlow> flow;
-  Ptr<QueueDisc> qd;
+  Ptr<Queue<QueueDiscItem> > flowQ;
+  Flow *flow;
   if (m_flowsIndices.find (h) == m_flowsIndices.end ())
     {
       NS_LOG_INFO ("Creating a new flow queue with index " << h);
-      flow = m_flowFactory.Create<BFDRRFlow> ();
+      flowQ = m_flowFactory.Create<DropTailQueue<QueueDiscItem>> ();
 
+      flow = new Flow();
       // Set flow type from packet tag
       Ptr<Packet> packet = item->GetPacket();
       FlowTag packetTag;
       packet->PeekPacketTag (packetTag);
       flow->SetFlowType(packetTag.GetFlowType());
+      flow->idx = GetNInternalQueues () - 1;
+      flow->selfQ = flowQ;
 
-//      Ptr<DropTailQueue<QueueDiscItem> > queue = CreateObject<DropTailQueue<QueueDiscItem> > ();
-      qd = m_queueDiscFactory.Create<DropTailQueue> ();
-      qd->Initialize ();
-      flow->SetQueueDisc (qd);
-      AddQueueDiscClass (flow); // Basically higher level queue disc (this) lists its flows as queue disc class (possibly synonymous to flow)
-      NS_LOG_INFO ("max q size " << qd->GetMaxSize());
+      NS_LOG_INFO ("max q size " << flowQ->GetMaxSize());
 
-      m_flowsIndices[h] = GetNQueueDiscClasses () - 1;
+      m_flowsIndices[h] = flow;
+      AddInternalQueue (flowQ);
     }
   else
     {
-      qd = GetQueueDiscClass (m_flowsIndices[h])->GetQueueDisc();
-      flow = StaticCast<BFDRRFlow> (GetQueueDiscClass (m_flowsIndices[h]));
+      flow = m_flowsIndices[h];
+      flowQ = m_flowsIndices[h]->selfQ;
     }
-  NS_LOG_INFO ("current q size " << qd->GetNBytes());
+
+  NS_LOG_INFO ("current q size " << flowQ->GetNPackets());
 
   // Get limit for the type of flow
-  uint32_t limit = m_soft_limit;
+  QueueSize limit = m_soft_limit;
   if (flow->GetFlowType ()== FlowType::BURSTY)
     {
       limit = m_hard_limit;
     }
 
-  if ((qd->GetNBytes () + item->GetPacket()->GetSize()) > limit)
+  if ((flowQ->GetCurrentSize() + item) > limit)
     {
       NS_LOG_LOGIC ("Queue full -- dropping pkt");
       DropBeforeEnqueue (item, LIMIT_EXCEEDED_DROP);
@@ -227,27 +158,24 @@ BFDRRQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     }
 
   // Indicates a bursty flow is overflowing its bursty limit
-  if (qd->GetNBytes () + item->GetPacket()->GetSize() > m_soft_limit)
+  // fix cond what if there already
+  if (flowQ->GetCurrentSize() + item > m_soft_limit)
     {
       NS_LOG_LOGIC ("Overflowing bursty flow detected. Increasing the limit temporarily");
       m_overflowingBurstyFlows.push_back(flow);
     }
 
-  qd->Enqueue (item);
+  flowQ->Enqueue (item);
 
-  NS_LOG_DEBUG ("Packet enqueued into flow " << h << "; flow index " << m_flowsIndices[h]);
+  NS_LOG_DEBUG ("Packet enqueued into flow " << h << "; flow index " << m_flowsIndices[h]->idx);
 
-  if (flow->GetStatus () == BFDRRFlow::INACTIVE)
+  // are inactive queues in the internal queue?
+  if (flow->GetStatus () == FlowStatus::INACTIVE)
     {
       NS_LOG_DEBUG ("Setting flow as ACTIVE");
-      flow->SetStatus (BFDRRFlow::ACTIVE);
+      flow->SetStatus (FlowStatus::ACTIVE);
       m_flowList.push_back (flow);
     }
-
-//  while (GetNBytes () > m_soft_limit)
-//    {
-//      BFDRRDrop ();
-//    }
 
   return true;
 }
@@ -257,7 +185,7 @@ BFDRRQueueDisc::DoDequeue (void)
 {
   NS_LOG_FUNCTION (this);
 
-  Ptr<BFDRRFlow> flow;
+  Ptr<Queue<QueueDiscItem> > flowQ;
   Ptr<QueueDiscItem> item;
 
   if (m_flowList.empty ())
@@ -266,24 +194,26 @@ BFDRRQueueDisc::DoDequeue (void)
       return 0;
     }
 
+  Flow *flow;
   do
     {
       flow = m_flowList.front ();
+      flowQ = flow->selfQ;
       m_flowList.pop_front ();
       flow->IncreaseDeficit (m_quantum);
-      Ptr<const QueueDiscItem> t_item = flow->GetQueueDisc ()->Peek ();
+      Ptr<const QueueDiscItem> t_item = flowQ->Peek ();
 
       if ( (uint32_t) flow->GetDeficit () >= t_item->GetSize ())
         {
-          item = flow->GetQueueDisc ()->Dequeue ();
+          item = flowQ->Dequeue ();
           flow->IncreaseDeficit (-item->GetSize ());
           NS_LOG_DEBUG ("Dequeued packet " << item->GetPacket ());
 
-          if (flow->GetQueueDisc ()->GetNPackets () == 0)
+          if (flowQ->GetNPackets () == 0)
             {
               NS_LOG_DEBUG ("Empty Flow, Setting it to INACTIVE");
               flow->SetDeficit (0);
-              flow->SetStatus (BFDRRFlow::INACTIVE);
+              flow->SetStatus (FlowStatus::INACTIVE);
             }
 
           else
@@ -294,7 +224,7 @@ BFDRRQueueDisc::DoDequeue (void)
 
           // If this was an overflowing bursty flow, and now it is under soft limit, remove it from the list
           if (std::find(m_overflowingBurstyFlows.begin(), m_overflowingBurstyFlows.end(), flow) != m_overflowingBurstyFlows.end () &&
-              (flow->GetQueueDisc ()->GetNBytes()) <= m_soft_limit)
+              (flow->selfQ->GetCurrentSize()) <= m_soft_limit)
             {
               m_overflowingBurstyFlows.remove (flow);
 //              m_overflowingBurstyFlows.erase (std::remove (m_overflowingBurstyFlows.begin (),
@@ -317,11 +247,11 @@ BFDRRQueueDisc::DoDequeue (void)
 }
 
 Ptr<const QueueDiscItem>
-BFDRRQueueDisc::DoPeek (void) const
+BFDRRQueueDisc::DoPeek (void)
 {
   NS_LOG_FUNCTION (this);
 
-  Ptr<BFDRRFlow> flow;
+  Flow *flow;
 
   if (!m_flowList.empty ())
     {
@@ -332,7 +262,7 @@ BFDRRQueueDisc::DoPeek (void) const
       return 0;
     }
 
-  return flow->GetQueueDisc ()->Peek ();
+  return flow->selfQ->Peek ();
 }
 
 bool
@@ -347,7 +277,7 @@ BFDRRQueueDisc::CheckConfig (void)
 
   if (GetNPacketFilters () == 0)
     {
-      Ptr<DRRIpv4PacketFilter> ipv4Filter = CreateObject<DRRIpv4PacketFilter> ();
+      Ptr<BFDRRIpv4PacketFilter> ipv4Filter = CreateObject<BFDRRIpv4PacketFilter> ();
       AddPacketFilter (ipv4Filter);
       //      NS_LOG_ERROR ("BFDRRQueueDisc needs at least a packet filter");
       //      return false;
@@ -378,9 +308,9 @@ BFDRRQueueDisc::InitializeParams (void)
       NS_LOG_DEBUG ("Setting the quantum to: " << m_quantum);
     }
 
-  m_flowFactory.SetTypeId ("ns3::BFDRRFlow");
+//  m_flowFactory.SetTypeId ("ns3::BFDRRFlow");
 
-  m_queueDiscFactory.SetTypeId ("ns3::CoDelQueueDisc");
+//  m_queueDiscFactory.SetTypeId ("ns3::CoDelQueueDisc");
 
   //m_queueDiscFactory.Set ("Mode", EnumValue (QueueBase::QUEUE_MODE_BYTES));
   //m_queueDiscFactory.Set ("MaxPackets", UintegerValue (m_soft_limit + 1));
@@ -388,33 +318,5 @@ BFDRRQueueDisc::InitializeParams (void)
   //m_queueDiscFactory.Set ("Target", StringValue (m_target));
 }
 
-uint32_t
-BFDRRQueueDisc::BFDRRDrop (void)
-{
-  NS_LOG_FUNCTION (this);
-
-  uint32_t maxBacklog = 0, index = 0;
-  Ptr<QueueDisc> qd;
-
-  /* Queue is full! Find the fat flow and drop one packet from it */
-  for (uint32_t i = 0; i < GetNQueueDiscClasses (); i++)
-    {
-      qd = GetQueueDiscClass (i)->GetQueueDisc ();
-      uint32_t bytes = qd->GetNBytes ();
-      if (bytes > maxBacklog)
-        {
-          maxBacklog = bytes;
-          index = i;
-        }
-    }
-
-  /* Now we drop one packet from the fat flow */
-  qd = GetQueueDiscClass (index)->GetQueueDisc ();
-  Ptr<QueueDiscItem> item;
-  item = qd->GetInternalQueue (0)->Dequeue ();
-  DropAfterDequeue (item, OVERLIMIT_DROP);
-  NS_LOG_INFO("Dropped item from queue " << index );
-  return index;
-}
 
 } // namespace ns3
