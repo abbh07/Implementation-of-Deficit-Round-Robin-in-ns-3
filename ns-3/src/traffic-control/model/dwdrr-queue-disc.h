@@ -20,14 +20,12 @@
  *          Vilas M <vilasnitk19@gmail.com>
 */
 
-#ifndef BFDRR_QUEUE_DISC
-#define BFDRR_QUEUE_DISC
+#ifndef DWDRR_QUEUE_DISC
+#define DWDRR_QUEUE_DISC
 
 #include "ns3/queue-disc.h"
 #include "ns3/object-factory.h"
-#include "ns3/flow-tag.h"
 #include <list>
-#include <set>
 #include <map>
 
 namespace ns3 {
@@ -35,10 +33,10 @@ namespace ns3 {
 /**
 * \ingroup traffic-control
 *
-* \brief A flow queue used by the BFDRRFlow queue disc
+* \brief A flow queue used by the DWDRR queue disc
 */
 
-class BFDRRFlow : public QueueDiscClass
+class DWDRRFlow : public QueueDiscClass
 {
 public:
   /**
@@ -49,11 +47,11 @@ public:
 
 
   /**
-   * \brief BFDRRFlow constructor
+   * \brief DWDRRFlow constructor
    */
-  BFDRRFlow ();
+  DWDRRFlow ();
 
-  virtual ~BFDRRFlow ();
+  virtual ~DWDRRFlow ();
 
 
   /**
@@ -101,29 +99,21 @@ public:
    */
   FlowStatus GetStatus (void) const;
 
-  FlowType GetFlowType(void) const;
-
-  void SetFlowType(FlowType flowType);
-
-
 
 private:
   uint32_t m_deficit;   //!< the deficit for this flow
   FlowStatus m_status; //!< the status of this flow
-  FlowType m_flowType;
 };
 
 
 /**
 * \ingroup traffic-control
 *
-* \brief A BFDRRpacket queue disc
+* \brief A DWDRRpacket queue disc
 */
 
-class BFDRRQueueDisc : public QueueDisc
+class DWDRRQueueDisc : public QueueDisc
 {
-  static constexpr const char* LIMIT_EXCEEDED_DROP = "Queue disc limit exceeded";  //!< Packet dropped due to queue disc limit exceeded
-
 public:
   /**
    * \brief Get the type ID.
@@ -131,11 +121,11 @@ public:
    */
   static TypeId GetTypeId (void);
   /**
-   * \brief BFDRRQueueDisc constructor
+   * \brief DWDRRQueueDisc constructor
    */
-  BFDRRQueueDisc ();
+  DWDRRQueueDisc ();
 
-  virtual ~BFDRRQueueDisc ();
+  virtual ~DWDRRQueueDisc ();
 
 
   /**
@@ -169,7 +159,7 @@ private:
    * \brief Drop a packet from the tail of the queue with the largest current byte count (Packet Stealing)
    * \return the index of the queue with the largest current byte count
    */
-  uint32_t BFDRRDrop (void);
+  uint32_t DWDRRDrop (void);
 
   uint32_t m_packets;      //!< cumulative sum of packets across all flows
   uint32_t m_soft_limit;              //!< Maximum number of bytes in the queue disc
@@ -177,9 +167,8 @@ private:
   uint32_t m_quantum;        //!< total number of bytes that a flow can send
   uint32_t m_flows;          //!< Number of flow queues
 
-  std::set<Ptr<BFDRRFlow> > m_overflowingBurstyFlows;
 
-  std::list<Ptr<BFDRRFlow> > m_flowList;    //!< The list of flows
+  std::list<Ptr<DWDRRFlow> > m_flowList;    //!< The list of flows
 
   std::map<uint32_t, uint32_t> m_flowsIndices;    //!< Map with the index of class for each flow
 
@@ -189,4 +178,4 @@ private:
 
 } // namespace ns3
 
-#endif /* BFDRR_QUEUE_DISC */
+#endif /* DWDRR_QUEUE_DISC */

@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<FlowMonitor>
+  <FlowStats>
+    <Flow flowId="1" timeFirstTxPacket="+1000000000.0ns" timeFirstRxPacket="+1002092800.0ns" timeLastTxPacket="+9999200801.0ns" timeLastRxPacket="+9999401118.0ns" delaySum="+2227536685838.0ns" jitterSum="+8444652361.0ns" lastDelay="+229000317.0ns" txBytes="5734944" rxBytes="5592012" txPackets="10345" rxPackets="10086" lostPackets="0" timesForwarded="0">
+    </Flow>
+    <Flow flowId="2" timeFirstTxPacket="+1002092800.0ns" timeFirstRxPacket="+1004185600.0ns" timeLastTxPacket="+9998457119.0ns" timeLastRxPacket="+9998770720.0ns" delaySum="+10519630159.0ns" jitterSum="+6401.0ns" lastDelay="+2086399.0ns" txBytes="262240" rxBytes="262188" txPackets="5043" rxPackets="5042" lostPackets="0" timesForwarded="0">
+    </Flow>
+  </FlowStats>
+  <Ipv4FlowClassifier>
+    <Flow flowId="1" sourceAddress="10.1.1.1" destinationAddress="10.1.1.2" protocol="6" sourcePort="49153" destinationPort="50000">
+      <Dscp value="0x0" packets="10345" />
+    </Flow>
+    <Flow flowId="2" sourceAddress="10.1.1.2" destinationAddress="10.1.1.1" protocol="6" sourcePort="50000" destinationPort="49153">
+      <Dscp value="0x0" packets="5043" />
+    </Flow>
+  </Ipv4FlowClassifier>
+  <Ipv6FlowClassifier>
+  </Ipv6FlowClassifier>
+</FlowMonitor>
