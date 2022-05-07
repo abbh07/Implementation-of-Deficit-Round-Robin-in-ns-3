@@ -321,7 +321,7 @@ DRRQueueDisc::InitializeParams (void)
 
   m_flowFactory.SetTypeId ("ns3::DRRFlow");
 
-  m_queueDiscFactory.SetTypeId ("ns3::CoDelQueueDisc");
+  m_queueDiscFactory.SetTypeId ("ns3::FifoQueueDisc");
 
   //m_queueDiscFactory.Set ("Mode", EnumValue (QueueBase::QUEUE_MODE_BYTES));
   //m_queueDiscFactory.Set ("MaxPackets", UintegerValue (m_soft_limit + 1));
