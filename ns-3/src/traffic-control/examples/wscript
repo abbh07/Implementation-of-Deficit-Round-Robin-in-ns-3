@@ -41,3 +41,11 @@ def build(bld):
     obj = bld.create_ns3_program('light-bursty-queue-drops',
                                          ['vr-app' ,'network','internet', 'point-to-point', 'applications', 'traffic-control', 'flow-monitor', 'netanim'])
     obj.source = 'light-bursty-queue-drops.cc'
+
+    obj = bld.create_ns3_program('lhb-queue-drops',
+                                         ['vr-app' ,'network','internet', 'point-to-point', 'applications', 'traffic-control', 'flow-monitor', 'netanim'])
+    obj.source = 'lhb-queue-drops.cc'
+
+    obj = bld.create_ns3_program('random-queue-drops',
+                                         ['vr-app' ,'network','internet', 'point-to-point', 'applications', 'traffic-control', 'flow-monitor', 'netanim'])
+    obj.source = 'random-queue-drops.cc'
