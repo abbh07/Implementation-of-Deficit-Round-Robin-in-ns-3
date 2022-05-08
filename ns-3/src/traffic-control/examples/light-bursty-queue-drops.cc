@@ -42,6 +42,8 @@ main (int argc, char *argv[])
 
   // Enable logs
   LogComponentEnableAll (LOG_PREFIX_TIME);
+  LogComponentEnable ("DRRQueueDisc", LOG_DEBUG);
+  LogComponentEnable ("DRRQueueDisc", LOG_INFO);
   LogComponentEnable ("BFDRRQueueDisc", LOG_DEBUG);
   LogComponentEnable ("BFDRRQueueDisc", LOG_INFO);
 //  LogComponentEnable ("BFDRRFlow", LOG_INFO);
@@ -155,14 +157,14 @@ main (int argc, char *argv[])
   OnOffHelper clientHelper ("ns3::UdpSocketFactory", Address ());
   clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
   clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  clientHelper.SetAttribute ("PacketSize", UintegerValue (50));
+  clientHelper.SetAttribute ("PacketSize", UintegerValue (100));
   clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
 
   Ptr<FlowApplication> flowApplication1 = CreateObject<FlowApplication> ();
   flowApplication1->SetFlowType (FlowType::LIGHT);
 //   flowApplication->SetRemote (i1i2.GetAddress (1), port);
   flowApplication1->SetRemote (i2i3.GetAddress (1), port);
-  flowApplication1->SetPacketSize (200);
+  flowApplication1->SetPacketSize (100);
   flowApplication1->SetMaxPackets (100);
   flowApplication1->SetProtocol (UdpSocketFactory::GetTypeId());
   //  flowApplication.SetAttribute ("FlowType", "Bursty");
@@ -176,7 +178,7 @@ main (int argc, char *argv[])
   flowApplication2->SetFlowType (FlowType::BURSTY);
 //   flowApplication->SetRemote (i1i2.GetAddress (1), port);
   flowApplication2->SetRemote (i2i3.GetAddress (1), port);
-  flowApplication2->SetPacketSize (200);
+  flowApplication2->SetPacketSize (100);
   flowApplication2->SetMaxPackets (100);
   flowApplication2->SetProtocol (UdpSocketFactory::GetTypeId());
 

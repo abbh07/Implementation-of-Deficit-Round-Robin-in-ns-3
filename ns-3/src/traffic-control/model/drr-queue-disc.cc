@@ -158,21 +158,25 @@ DRRQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     }
 
   Ptr<DRRFlow> flow;
+  Ptr<QueueDisc> qd;
   if (m_flowsIndices.find (h) == m_flowsIndices.end ())
     {
       NS_LOG_DEBUG ("Creating a new flow queue with index " << h);
       flow = m_flowFactory.Create<DRRFlow> ();
-      Ptr<QueueDisc> qd = m_queueDiscFactory.Create<QueueDisc> ();
+      qd = m_queueDiscFactory.Create<QueueDisc> ();
       qd->Initialize ();
       flow->SetQueueDisc (qd);
       AddQueueDiscClass (flow);
+      NS_LOG_INFO ("max q size " << qd->GetMaxSize());
 
       m_flowsIndices[h] = GetNQueueDiscClasses () - 1;
     }
   else
     {
       flow = StaticCast<DRRFlow> (GetQueueDiscClass (m_flowsIndices[h]));
+      qd = GetQueueDiscClass (m_flowsIndices[h])->GetQueueDisc();
     }
+  NS_LOG_INFO ("current q size " << qd->GetNBytes());
 
 
   flow->GetQueueDisc ()->Enqueue (item);

@@ -225,9 +225,10 @@ BFDRRQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     }
 
   // Indicates a bursty flow is overflowing its bursty limit
-  if (qd->GetNBytes () + item->GetPacket()->GetSize() > m_soft_limit)
+  if (qd->GetNBytes () + item->GetPacket()->GetSize() > m_soft_limit &&
+      std::find(m_overflowingBurstyFlows.begin(), m_overflowingBurstyFlows.end(), flow) == m_overflowingBurstyFlows.end ())
     {
-      NS_LOG_INFO ("Overflowing bursty flow detected. Increasing the limit temporarily");
+      NS_LOG_INFO ("Overflowing bursty flow detected. Increasing the limit temporarily if possible");
       m_overflowingBurstyFlows.insert(flow);
     }
 
@@ -266,13 +267,12 @@ BFDRRQueueDisc::DoDequeue (void)
     }
 
   for (auto it = m_flowList.begin(); it != m_flowList.end(); ++it) {
-      flow = m_flowList.front ();
+      flow =  *it;
       if (flow->GetFlowType () == FlowType::HEAVY && isOverflowingState)
         {
           NS_LOG_DEBUG ("Ignoring heavy queue while in bursty traffic");
           continue ;
         }
-      flow = m_flowList.front ();
       m_flowList.erase(it);
       flow->IncreaseDeficit (m_quantum);
       Ptr<const QueueDiscItem> t_item = flow->GetQueueDisc ()->Peek ();

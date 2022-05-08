@@ -42,6 +42,8 @@ main (int argc, char *argv[])
 
   // Enable logs
   LogComponentEnableAll (LOG_PREFIX_TIME);
+  LogComponentEnable ("DRRQueueDisc", LOG_DEBUG);
+  LogComponentEnable ("DRRQueueDisc", LOG_INFO);
   LogComponentEnable ("BFDRRQueueDisc", LOG_DEBUG);
   LogComponentEnable ("BFDRRQueueDisc", LOG_INFO);
 //  LogComponentEnable ("BFDRRFlow", LOG_INFO);
@@ -134,7 +136,7 @@ main (int argc, char *argv[])
   clientHelper.SetAttribute ("DataRate", DataRateValue (DataRate ("10Mb/s")));
 
   Ptr<FlowApplication> flowApplication = CreateObject<FlowApplication> ();
-  flowApplication->SetFlowType (FlowType::HEAVY);
+  flowApplication->SetFlowType (FlowType::BURSTY);
   flowApplication->SetRemote (i1i2.GetAddress (1), port);
   flowApplication->SetPacketSize (100);
   flowApplication->SetMaxPackets (100);
