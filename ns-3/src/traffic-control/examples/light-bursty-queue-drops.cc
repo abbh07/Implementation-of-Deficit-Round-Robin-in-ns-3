@@ -42,6 +42,8 @@ main (int argc, char *argv[])
 
   // Enable logs
   LogComponentEnableAll (LOG_PREFIX_TIME);
+  LogComponentEnable ("DRRQueueDisc", LOG_DEBUG);
+  LogComponentEnable ("DRRQueueDisc", LOG_INFO);
   LogComponentEnable ("BFDRRQueueDisc", LOG_DEBUG);
   LogComponentEnable ("BFDRRQueueDisc", LOG_INFO);
 //  LogComponentEnable ("BFDRRFlow", LOG_INFO);
@@ -76,7 +78,7 @@ main (int argc, char *argv[])
   NodeContainer n2n3 = NodeContainer (nodes.Get (2), nodes.Get (3));
 
   TrafficControlHelper tch;
-  tch.SetRootQueueDisc ("ns3::BFDRRQueueDisc");
+  tch.SetRootQueueDisc ("ns3::DRRQueueDisc");
   // Pfifo q have min size 1000 with min 3 internal q
 //  tch.AddInternalQueues (handle, 1, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 

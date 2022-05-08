@@ -287,7 +287,7 @@ void FlowApplication::SendLight ()
     {
       Ptr<Packet> pkt = Create<Packet> (m_size-sizeof (FlowType));
       FlowTag tag;
-      tag.SetFlowType (FlowType::HEAVY);
+      tag.SetFlowType (FlowType::LIGHT);
       pkt->AddPacketTag (tag);
 
       if ((m_socket->Send (pkt)) >= 0)
