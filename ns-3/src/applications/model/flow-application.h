@@ -10,10 +10,15 @@
 #include "ns3/ptr.h"
 #include "ns3/socket.h"
 #include "ns3/ipv4-address.h"
+#include "ns3/tcp-socket-base.h"
+#include "src/internet/test/tcp-general-test.h"
+#include "ns3/tcp-congestion-ops.h"
+#include "ns3/tcp-recovery-ops.h"
 #include "ns3/flow-tag.h"
 
 namespace ns3 {
 
+// class FlowApplication : public Application, public ns3::TcpSocketBase
 class FlowApplication : public Application
 {
 public:
@@ -29,14 +34,26 @@ public:
   void SetPacketSize (uint32_t packetSize);
   void SetMaxPackets (uint32_t maxPackets);
   void SetProtocol (TypeId id);
-
+  // Ptr<Socket> GetSocket (void) const;
   uint64_t GetTotalTx () const;
-
+  /// Callback for the ACK management.
+//   typedef Callback<void, Ptr<const Packet>, const TcpHeader&,
+//                    Ptr<const TcpSocketBase> > AckManagementCb;
+//   /**
+//    * \brief Set the callback invoked when an ACK is received (at the beginning
+//    * of the processing)
+//    *
+//    * \param cb callback
+//    */
+//   void SetRcvAckCb (AckManagementCb cb);
+// Ptr<TcpSocketMsgBase> m_senderSocket;  
 protected:
   virtual void DoDispose (void);
 
 private:
-
+  // void RcvAckCb       (Ptr<const Packet> p, const TcpHeader& h,
+  //                      Ptr<const TcpSocketBase> tcp);
+  // AckManagementCb m_rcvAckCb;       //!< Receive ACK callback.
   virtual void StartApplication (void);
   virtual void StopApplication (void);
   /**

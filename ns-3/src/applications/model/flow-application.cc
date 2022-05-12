@@ -21,6 +21,10 @@
 #include "ns3/tcp-socket-factory.h"
 #include "ns3/flow-application.h"
 #include <cstdlib>
+#include "src/internet/test/tcp-general-test.h"
+#include "ns3/tcp-socket-base.h"
+#include "ns3/tcp-congestion-ops.h"
+#include "ns3/tcp-recovery-ops.h"
 #include <cstdio>
 
 namespace ns3 {
@@ -74,6 +78,7 @@ FlowApplication::FlowApplication ()
   m_socket = 0;
   m_sendEvent = EventId ();
   m_connected = false;
+  // m_count = 0;
 }
 
 FlowApplication::~FlowApplication ()
@@ -103,6 +108,14 @@ FlowApplication::DoDispose (void)
   Application::DoDispose ();
 }
 
+// Ptr<Socket>
+// FlowApplication::GetSocket (void) const
+// {
+//   NS_LOG_FUNCTION (this);
+//   return m_socket;
+// }
+
+
 void
 FlowApplication::StartApplication (void)
 {
@@ -110,6 +123,7 @@ FlowApplication::StartApplication (void)
 
   if (m_socket == 0)
     {
+      // m_socket = DynamicCast<TcpSocketMsgBase> (Socket::CreateSocket (ns3::Socket::GetNode (), m_tid));
       m_socket = Socket::CreateSocket (GetNode (), m_tid);
       if (Ipv4Address::IsMatchingType(m_peerAddress) == true)
         {
@@ -176,8 +190,23 @@ FlowApplication::StartApplication (void)
 
   m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
   m_socket->SetAllowBroadcast (true);
+  // m_socket->SetRcvAckCb (MakeCallback (&FlowApplication::RcvAckCb, this));
   m_sendEvent = Simulator::Schedule (Seconds (0.0), &FlowApplication::Send, this);
 }
+
+// void
+// FlowApplication::RcvAckCb (const Ptr<const Packet> p, const TcpHeader& h,
+//                           const Ptr<const TcpSocketBase> tcp)
+// {
+//   NS_LOG_INFO("logging ack");
+// }
+
+// void
+// TcpSocketMsgBase::SetRcvAckCb (AckManagementCb cb)
+// {
+//   NS_ASSERT (!cb.IsNull ());
+//   m_rcvAckCb = cb;
+// }
 
 void
 FlowApplication::StopApplication (void)
