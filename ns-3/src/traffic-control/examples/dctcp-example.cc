@@ -93,13 +93,18 @@
  
 #include <iostream>
 #include <iomanip>
- 
+#include <vector>
+
+#include "ns3/random-variable-stream.h"
+#include "ns3/bfdrr-queue-disc.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/traffic-control-module.h"
+#include "ns3/tcp-socket-factory.h"
+
  
 using namespace ns3;
  
@@ -125,18 +130,23 @@ PrintProgress (Time interval)
 void
 TraceS1R1Sink (std::size_t index, Ptr<const Packet> p, const Address& a)
 {
+  std::cout << "tracing sink 1/1/" << index << " size " << p->GetSize () << std::endl;
   rxS1R1Bytes[index] += p->GetSize ();
 }
  
 void
 TraceS2R2Sink (std::size_t index, Ptr<const Packet> p, const Address& a)
 {
+  std::cout << "tracing sink 2/2/" << index << " size " << p->GetSize () << std::endl;
+
   rxS2R2Bytes[index] += p->GetSize ();
 }
  
 void
 TraceS3R1Sink (std::size_t index, Ptr<const Packet> p, const Address& a)
 {
+  std::cout << "tracing sink 3/1/" << index << " size " << p->GetSize () << std::endl;
+
   rxS3R1Bytes[index] += p->GetSize ();
 }
  
@@ -264,14 +274,36 @@ CheckT2QueueSize (Ptr<QueueDisc> queue)
   // check queue size every 1/100 of a second
   Simulator::Schedule (MilliSeconds (10), &CheckT2QueueSize, queue);
 }
- 
+
+NS_LOG_COMPONENT_DEFINE ("DCTCP");
+
+
 int main (int argc, char *argv[])
 {
+
+  LogComponentEnableAll (LOG_PREFIX_TIME);
+//  LogComponentEnable ("DRRQueueDisc", LOG_DEBUG);
+//  LogComponentEnable ("DRRQueueDisc", LOG_INFO);
+//  LogComponentEnable ("BFDRRQueueDisc", LOG_DEBUG);
+//  LogComponentEnable ("BFDRRQueueDisc", LOG_INFO);
+//  //  LogComponentEnable ("BFDRRFlow", LOG_INFO);
+//  LogComponentEnable ("Ipv4PacketFilter", LOG_DEBUG);
+//  LogComponentEnable ("Ipv4PacketFilter", LOG_INFO);
+//  LogComponentEnable ("FlowTag", LOG_DEBUG);
+//  LogComponentEnable ("FlowTag", LOG_INFO);
+//  LogComponentEnable ("QueueDisc", LOG_DEBUG);
+//  LogComponentEnable ("QueueDisc", LOG_INFO);
+//  //  LogComponentEnable ("QueueDisc", LOG_FUNCTION);
+//  LogComponentEnable ("FlowApplication", LOG_DEBUG);
+//  LogComponentEnable ("FlowApplication", LOG_INFO);
+  LogComponentEnable ("DCTCP", LOG_DEBUG);
+  LogComponentEnable ("DCTCP", LOG_INFO);
+
   std::string outputFilePath = ".";
   std::string tcpTypeId = "TcpDctcp";
-  Time flowStartupWindow = Seconds (1);
-  Time convergenceTime = Seconds (3);
-  Time measurementWindow = Seconds (1);
+  Time flowStartupWindow = Seconds (0.5);
+  Time convergenceTime = Seconds (0.5);
+  Time measurementWindow = Seconds (0.5);
   bool enableSwitchEcn = true;
   Time progressInterval = MilliSeconds (100);
  
@@ -371,7 +403,7 @@ int main (int argc, char *argv[])
   TrafficControlHelper tchRed10;
   // MinTh = 50, MaxTh = 150 recommended in ACM SIGCOMM 2010 DCTCP Paper
   // This yields a target (MinTh) queue depth of 60us at 10 Gb/s
-  tchRed10.SetRootQueueDisc ("ns3::BFDRRQueueDisc");//,
+  tchRed10.SetRootQueueDisc ("ns3::DRRQueueDisc");//,
                             //  "LinkBandwidth", StringValue ("10Gbps"),
                             //  "LinkDelay", StringValue ("10us"),
                             //  "MinTh", DoubleValue (50),
@@ -381,7 +413,7 @@ int main (int argc, char *argv[])
   TrafficControlHelper tchRed1;
   // MinTh = 20, MaxTh = 60 recommended in ACM SIGCOMM 2010 DCTCP Paper
   // This yields a target queue depth of 250us at 1 Gb/s
-  tchRed1.SetRootQueueDisc ("ns3::BFDRRQueueDisc");//,
+  tchRed1.SetRootQueueDisc ("ns3::DRRQueueDisc");//,
                             // "LinkBandwidth", StringValue ("1Gbps"),
                             // "LinkDelay", StringValue ("10us"),
                             // "MinTh", DoubleValue (20),
@@ -447,6 +479,14 @@ int main (int argc, char *argv[])
   // Each sender in S2 sends to a receiver in R2
   std::vector<Ptr<PacketSink> > r2Sinks;
   r2Sinks.reserve (20);
+
+  std::vector<FlowType> applicationTypes{
+      FlowType::BURSTY,
+      FlowType::HEAVY,
+      FlowType::LIGHT
+  };
+  Ptr<UniformRandomVariable> rand = CreateObject<UniformRandomVariable> ();
+
   for (std::size_t i = 0; i < 20; i++)
     {
       uint16_t port = 50000 + i;
@@ -455,20 +495,31 @@ int main (int argc, char *argv[])
       ApplicationContainer sinkApp = sinkHelper.Install (R2.Get (i));
       Ptr<PacketSink> packetSink = sinkApp.Get (0)->GetObject<PacketSink> ();
       r2Sinks.push_back (packetSink);
+//      sinkApp.Start (startTime);
       sinkApp.Start (startTime);
       sinkApp.Stop (stopTime);
  
-      OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
-      clientHelper1.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-      clientHelper1.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-      clientHelper1.SetAttribute ("DataRate", DataRateValue (DataRate ("1Gbps")));
-      clientHelper1.SetAttribute ("PacketSize", UintegerValue (1000));
- 
+//      OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
+//      clientHelper1.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+//      clientHelper1.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+//      clientHelper1.SetAttribute ("DataRate", DataRateValue (DataRate ("1bps")));
+//      clientHelper1.SetAttribute ("PacketSize", UintegerValue (1000));
+
+      Ptr<FlowApplication> flowApplication = CreateObject<FlowApplication> ();
+      flowApplication->SetFlowType (applicationTypes[rand->GetInteger(0, 2)]);
+      flowApplication->SetRemote (ipR2T2[i].GetAddress (0), port);
+      flowApplication->SetPacketSize (1000);
+      flowApplication->SetMaxPackets (100);
+      flowApplication->SetProtocol (TcpSocketFactory::GetTypeId());
+
       ApplicationContainer clientApps1;
-      AddressValue remoteAddress (InetSocketAddress (ipR2T2[i].GetAddress (0), port));
-      clientHelper1.SetAttribute ("Remote", remoteAddress);
-      clientApps1.Add (clientHelper1.Install (S2.Get (i)));
-      clientApps1.Start (i * flowStartupWindow / 20  + clientStartTime + MilliSeconds (i * 5));
+//      AddressValue remoteAddress (InetSocketAddress (ipR2T2[i].GetAddress (0), port));
+//      clientHelper1.SetAttribute ("Remote", remoteAddress);
+//      clientApps1.Add (clientHelper1.Install (S2.Get (i)));
+      clientApps1.Add (flowApplication);
+      S2.Get (i)->AddApplication (flowApplication);
+//      clientApps1.Start (i * flowStartupWindow / 20  + clientStartTime + MilliSeconds (i * 5));
+      clientApps1.Start (startTime);
       clientApps1.Stop (stopTime);
     }
  
@@ -495,23 +546,34 @@ int main (int argc, char *argv[])
       sinkApp.Start (startTime);
       sinkApp.Stop (stopTime);
  
-      OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
-      clientHelper1.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-      clientHelper1.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-      clientHelper1.SetAttribute ("DataRate", DataRateValue (DataRate ("1Gbps")));
-      clientHelper1.SetAttribute ("PacketSize", UintegerValue (1000));
- 
+//      OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
+//      clientHelper1.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+//      clientHelper1.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+//      clientHelper1.SetAttribute ("DataRate", DataRateValue (DataRate ("1Gbps")));
+//      clientHelper1.SetAttribute ("PacketSize", UintegerValue (1000));
+
+      Ptr<FlowApplication> flowApplication = CreateObject<FlowApplication> ();
+      flowApplication->SetFlowType (applicationTypes[rand->GetInteger(0, 2)]);
+      flowApplication->SetRemote (ipR1T2.GetAddress (0), port);
+      flowApplication->SetPacketSize (1000);
+      flowApplication->SetMaxPackets (10000);
+      flowApplication->SetProtocol (TcpSocketFactory::GetTypeId());
+
       ApplicationContainer clientApps1;
-      AddressValue remoteAddress (InetSocketAddress (ipR1T2.GetAddress (0), port));
-      clientHelper1.SetAttribute ("Remote", remoteAddress);
+//      AddressValue remoteAddress (InetSocketAddress (ipR1T2.GetAddress (0), port));
+//      clientHelper1.SetAttribute ("Remote", remoteAddress);
       if (i < 10)
         {
-          clientApps1.Add (clientHelper1.Install (S1.Get (i)));
+//          clientApps1.Add (clientHelper1.Install (S1.Get (i)));
+          clientApps1.Add (flowApplication);
+          S1.Get (i)->AddApplication (flowApplication);
           clientApps1.Start (i * flowStartupWindow / 10 + clientStartTime + MilliSeconds (i * 5));
         }
       else
         {
-          clientApps1.Add (clientHelper1.Install (S3.Get (i - 10)));
+//          clientApps1.Add (clientHelper1.Install (S3.Get (i - 10)));
+          clientApps1.Add (flowApplication);
+          S3.Get (i - 10)->AddApplication (flowApplication);
           clientApps1.Start ((i - 10) * flowStartupWindow / 10 + clientStartTime + MilliSeconds (i * 5));
         }
  

@@ -51,6 +51,6 @@ def build(bld):
     obj.source = 'random-queue-drops.cc'
 
     obj = bld.create_ns3_program('dctcp-example',
-                                 ['point-to-point', 'internet', 'applications', 'flow-monitor'])
+                                 ['point-to-point', 'internet', 'applications', 'flow-monitor', 'traffic-control','network'])
 
     obj.source = 'dctcp-example.cc'

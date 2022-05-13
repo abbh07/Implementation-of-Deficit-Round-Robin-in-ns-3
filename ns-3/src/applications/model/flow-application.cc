@@ -62,7 +62,7 @@ FlowApplication::GetTypeId (void)
                        MakeUintegerAccessor (&FlowApplication::m_max_packets),
                        MakeUintegerChecker<uint32_t> (12,65507))
         .AddAttribute ("Protocol", "The type of protocol to use. This should be a subclass of ns3::SocketFactory",
-                       TypeIdValue (UdpSocketFactory::GetTypeId ()),
+                       TypeIdValue (TcpSocketFactory::GetTypeId ()),
                        MakeTypeIdAccessor (&FlowApplication::m_tid),
                        // This should check for SocketFactory as a parent
                        MakeTypeIdChecker ())
